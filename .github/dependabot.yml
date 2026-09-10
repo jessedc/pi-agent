@@ -1,0 +1,14 @@
+# Keeps the pins current: the commit pins in .github/workflows/*.yml and the
+# base image digest in the Dockerfile. Each bump arrives as a pull request that
+# moves the pin and its human-readable label together. The apt pins in the
+# Dockerfile are not covered; those are refreshed by hand when a build fails.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly

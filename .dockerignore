@@ -1,0 +1,17 @@
+# Allowlist: the image gets the package, its lock and the agent definition —
+# nothing else in this directory, and never a credential. pi's own config is
+# generated at container start, so it is not a build input.
+*
+!Dockerfile
+!pyproject.toml
+!uv.lock
+!src/
+!.pi/agents/
+!image/
+
+# Re-excluded after the allowlist (last match wins). Running the gate leaves a
+# __pycache__ beside the package; it must not reach the image.
+**/__pycache__
+.env
+secrets/
+**/*.pem

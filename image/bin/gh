@@ -1,0 +1,14 @@
+#!/bin/sh
+# Serve the installation token to `gh` for one call, and to nothing else.
+#
+# The token lives in a file readable by the run's uid alone, named by
+# GH_TOKEN_FILE, rather than in the environment every process the model spawns
+# inherits. This wrapper sits ahead of /usr/bin/gh on PATH: it reads the file,
+# hands the token to gh in gh's own environment, and is gone. A GH_TOKEN that
+# is already set wins, which is how the bootstrap's App-JWT calls get through.
+set -eu
+if [ -z "${GH_TOKEN:-}" ] && [ -n "${GH_TOKEN_FILE:-}" ]; then
+    GH_TOKEN="$(cat "$GH_TOKEN_FILE")"
+    export GH_TOKEN
+fi
+exec /usr/bin/gh "$@"

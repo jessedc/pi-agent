@@ -1,0 +1,81 @@
+[project]
+name = "pi-agent"
+version = "0.1.0"
+description = "A container that turns a GitHub issue into a draft pull request"
+# No `readme`: the build backend reads whatever it points at, which would put
+# README.md in the image's build context for a file no runtime needs. This
+# distribution is never published, so the metadata field buys nothing.
+requires-python = ">=3.14"
+dependencies = [
+    "cryptography>=44",
+    "python-dotenv>=1.1,<2",
+]
+
+[project.scripts]
+# The host CLI and the container entrypoint ship in one distribution: one lock,
+# one validation gate, one subprocess seam. They never run in the same place.
+pi-agent = "pi_agent.host.run:main"
+pi-agent-container = "pi_agent.container.entrypoint:main"
+pi-agent-transcript = "pi_agent.host.transcript:main"
+
+[build-system]
+# The bound must cover every uv that builds this: the dev machine's and the
+# image's (pinned by UV_VERSION in the Dockerfile). uv uses its own bundled
+# uv_build when the running version satisfies this, and fetches one from PyPI
+# when it does not -- which would quietly undercut the offline-build guarantee,
+# because build-backend requirements are not recorded in uv.lock.
+requires = ["uv_build>=0.11.16,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+# Dev tools -- the validation gate. Runtime dependencies belong in
+# [project.dependencies], which the image installs from uv.lock.
+dev = [
+    "mypy>=2.1.0",
+    "pyright>=1.1.410",
+    "pytest>=9.1.1",
+    "ruff>=0.15.18",
+]
+
+# --- Formatter + linter (ruff) ---
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = [".venv", "__pycache__", "build", "dist", "sessions"]
+
+[tool.ruff.lint]
+# pycodestyle/pyflakes (E/F/W) + import sorting (I), modern syntax (UP),
+# bugbear (B), comprehensions (C4), simplifications (SIM).
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = [
+    "E501",   # line length is the formatter's job
+    "SIM105", # contextlib.suppress less readable than try/except for error logs
+]
+
+# --- Static analysis (mypy) ---
+[tool.mypy]
+python_version = "3.14"
+files = ["src", "tests", "scripts"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+check_untyped_defs = true     # type-check every function body...
+disallow_untyped_defs = true  # ...and require annotations on definitions
+ignore_missing_imports = true # for stub-less third-party deps
+
+# --- Static analysis (pyright) ---
+# Catches diagnostics mypy can't, e.g. reportPrivateImportUsage. Keep the
+# include list in sync with [tool.mypy].files.
+[tool.pyright]
+pythonVersion = "3.14"
+include = ["src", "tests", "scripts"]
+exclude = [".venv", "__pycache__", "build", "dist", "sessions"]
+typeCheckingMode = "standard"
+
+# --- Test runner (pytest) ---
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# No pythonpath: the project is installed editable, so `import pi_agent`
+# resolves the same way it will inside the image.
+pythonpath = ["tests"]
+addopts = "-q"

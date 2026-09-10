@@ -1,0 +1,35 @@
+# The same gate a developer runs locally, plus the image build the gate skips by
+# default. Both are read-only: no credential, no model, no network beyond
+# fetching the toolchain.
+#
+# Actions are pinned to a commit, not a tag: a tag can be moved, a commit
+# cannot. The version comment beside each pin is for humans and for Dependabot,
+# which bumps the pin and the comment together.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    name: ruff, pytest, mypy, pyright
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          # The same uv that builds the image (UV_VERSION in the Dockerfile), so
+          # one resolver reads uv.lock everywhere.
+          version: "0.12.5"
+          enable-cache: true
+      - run: uv sync
+      - run: uv run scripts/check.py
+
+  image:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker build --pull -t pi-issue-to-pr:ci .
