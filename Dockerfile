@@ -23,7 +23,7 @@
 #   docker buildx imagetools inspect node:24-bookworm-slim
 #
 # .github/dependabot.yml bumps it as a reviewable pull request.
-FROM node:24-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e
+FROM node:26-bookworm-slim@sha256:cd9f682fa2885cd1056e830424764158570061c59736a1da836bc3d73df095ae
 
 # Pinned: a floating agent can change tool and prompt behavior with no diff.
 # Review a new release, change this line, and rebuild through the Docker gate.
